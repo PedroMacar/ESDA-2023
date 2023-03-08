@@ -1,176 +1,159 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
-#define MAX_PESSOAS 100
-
+// Estrutura de dados para representar uma pessoa
 typedef struct {
     int id;
     char nome[50];
-    char apelido[50];
-    char data_nascimento[11];
+    char data_nascimento[11]; // formato: DD/MM/AAAA
 } Pessoa;
 
-Pessoa pessoas[MAX_PESSOAS];
-int num_pessoas = 0;
+// NÛ de uma lista encadeada de pessoas
+typedef struct PessoaNode {
+    Pessoa pessoa;
+    struct PessoaNode* proximo;
+} PessoaNode;
 
-void adicionar_pessoa() {
-    if (num_pessoas >= MAX_PESSOAS) {
-        printf("Limite de pessoas atingido.\n");
-        return;
-    }
-    
-    Pessoa nova_pessoa;
-    nova_pessoa.id = num_pessoas + 1;
-    
-    printf("Digite o nome: ");
-    scanf("%s", nova_pessoa.nome);
-    
-    printf("Digite o apelido: ");
-    scanf("%s", nova_pessoa.apelido);
-    
-    printf("Digite a data de nascimento (DD/MM/AAAA): ");
-    scanf("%s", nova_pessoa.data_nascimento);
-    
-    pessoas[num_pessoas] = nova_pessoa;
-    num_pessoas++;
-    
-    printf("Pessoa adicionada com sucesso.\n");
-}
+// FunÁ„o para adicionar uma pessoa no final da lista
+void adicionar_pessoa(PessoaNode** cabeca, Pessoa pessoa) {
+    PessoaNode* novo_no = (PessoaNode*) malloc(sizeof(PessoaNode));
+    novo_no->pessoa = pessoa;
+    novo_no->proximo = NULL;
 
-void remover_pessoa() {
-    int id;
-    printf("Digite o ID da pessoa que deseja remover: ");
-    scanf("%d", &id);
-    
-    int index = -1;
-    for (int i = 0; i < num_pessoas; i++) {
-        if (pessoas[i].id == id) {
-            index = i;
-            break;
+    if (*cabeca == NULL) {
+        // Se a lista estiver vazia, o novo nÛ È a cabeÁa da lista
+        *cabeca = novo_no;
+    } else {
+        // Se a lista n„o estiver vazia, percorre a lista atÈ o ˙ltimo nÛ
+        PessoaNode* ultimo_no = *cabeca;
+        while (ultimo_no->proximo != NULL) {
+            ultimo_no = ultimo_no->proximo;
         }
-    }
-    
-    if (index == -1) {
-        printf("Pessoa com ID %d n√£o encontrada.\n", id);
-        return;
-    }
-    
-    for (int i = index; i < num_pessoas - 1; i++) {
-        pessoas[i] = pessoas[i+1];
-    }
-    num_pessoas--;
-    
-    printf("Pessoa removida com sucesso.\n");
-}
 
-void listar_pessoas() {
-    printf("ID\tNome\tApelido\tData de Nascimento\n");
-    for (int i = 0; i < num_pessoas; i++) {
-        printf("%d\t%s\t%s\t%s\n", pessoas[i].id, pessoas[i].nome, pessoas[i].apelido, pessoas[i].data_nascimento);
+        // Insere o novo nÛ apÛs o ˙ltimo nÛ
+        ultimo_no->proximo = novo_no;
     }
 }
 
-Pessoa pessoa_mais_velha() {
-    Pessoa mais_velha = pessoas[0];
-    for (int i = 1; i < num_pessoas; i++) {
-        if (strcmp(pessoas[i].data_nascimento, mais_velha.data_nascimento) < 0) {
-            mais_velha = pessoas[i];
+// FunÁ„o para mostrar todas as pessoas da lista
+void mostrar_pessoas(PessoaNode* cabeca) {
+    printf("ID\tNome\tData de nascimento\n");
+    printf("--\t----\t--------------------\n");
+
+    PessoaNode* no_atual = cabeca;
+    while (no_atual != NULL) {
+        printf("%d\t%s\t%s\n", no_atual->pessoa.id, no_atual->pessoa.nome, no_atual->pessoa.data_nascimento);
+        no_atual = no_atual->proximo;
+    }
+}
+
+// FunÁ„o para encontrar a pessoa mais velha na lista
+void pessoa_mais_velha(PessoaNode* cabeca) {
+PessoaNode* no_atual = cabeca;
+Pessoa pessoa_mais_velha = no_atual->pessoa;
+while (no_atual != NULL) {
+    // Converte as datas de nascimento para um formato que possa ser comparado
+    int dia1, mes1, ano1, dia2, mes2, ano2;
+    sscanf(pessoa_mais_velha.data_nascimento, "%d/%d/%d", &dia1, &mes1, &ano1);
+    sscanf(no_atual->pessoa.data_nascimento, "%d/%d/%d", &dia2, &mes2, &ano2);
+
+    // Compara as datas de nascimento para determinar a pessoa mais velha
+    if (ano2 < ano1 || (ano2 == ano1 && mes2 < mes1) || (ano2 == ano1 && mes2 == mes1 && dia2 < dia1)) {
+        pessoa_mais_velha = no_atual->pessoa;
+    }
+
+    no_atual = no_atual->proximo;
+}
+
+printf("A pessoa mais velha da lista eh: %s, nascida em %s\n", pessoa_mais_velha.nome, pessoa_mais_velha.data_nascimento);
+}
+
+
+// FunÁ„o para excluir uma pessoa da lista pelo ID
+void excluir_pessoa(PessoaNode** cabeca, int id) {
+    PessoaNode* no_atual = *cabeca;
+    PessoaNode* no_anterior = NULL;
+
+    // Percorre a lista atÈ encontrar o nÛ com o ID desejado ou atÈ o final da lista
+    while (no_atual != NULL && no_atual->pessoa.id != id) {
+        no_anterior = no_atual;
+        no_atual = no_atual->proximo;
+    }
+
+    if (no_atual != NULL) {
+        // Se encontrou a pessoa com o ID desejado, remove o nÛ correspondente da lista
+        if (no_anterior == NULL) {
+            // Se o nÛ a ser removido È a cabeÁa da lista
+            *cabeca = no_atual->proximo;
+        } else {
+            // Se o nÛ a ser removido n„o È a cabeÁa da lista
+            no_anterior->proximo = no_atual->proximo;
         }
+        free(no_atual);
     }
-    return mais_velha;
 }
 
-Pessoa segunda_pessoa_mais_nova() {
-    Pessoa mais_nova = pessoas[0];
-    Pessoa segunda_mais_nova = pessoas[0];
-    
-    for (int i = 1; i < num_pessoas; i++) {
-        if (strcmp(pessoas[i].data_nascimento, mais_nova.data_nascimento) > 0) {
-            segunda_mais_nova = mais_nova;
-            mais_nova = pessoas[i];
-        } else if (strcmp(pessoas[i].data_nascimento, segunda_mais_nova.data_nascimento) > 0) {
-            segunda_mais_nova = pessoas[i];
-        }
-    }
-    
-    return segunda_mais_nova;
-}
-bool eh_primo(int num) {
-    if (num < 2) {
-        return false;
-    }
-    for (int i = 2; i*i <= num; i++) {
-        if (num % i == 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void remover_primos() {
-    int num_removidos = 0;
-    
-    for (int i = 0; i < num_pessoas; i++) {
-        int ano_nascimento = atoi(strtok(pessoas[i].data_nascimento, "/"));
-        if (eh_primo(ano_nascimento)) {
-            for (int j = i; j < num_pessoas - 1; j++) {
-                pessoas[j] = pessoas[j+1];
-            }
-            num_pessoas--;
-            num_removidos++;
-            i--;
-        }
-    }
-    
-    printf("%d pessoas foram removidas.\n", num_removidos);
-}
-
+// FunÁ„o principal para testar a lista de pessoas
 int main() {
-    int opcao;
-    
+    // Cria as trÍs pessoas
+    Pessoa pessoa1 = {1, "Joao", "01/01/1990"};
+    Pessoa pessoa2 = {2, "Maria", "02/02/1991"};
+    Pessoa pessoa3 = {3, "Pedro", "03/03/1992"};
+
+    // Cria a cabeÁa da lista
+    PessoaNode* cabeca = NULL;
+    int id_para_excluir;
+ PessoaNode* no_atual = cabeca;
+ Pessoa nova_pessoa;
+    int opcao = 0;
     do {
-        printf("\nEscolha uma op√ß√£o:\n");
+        printf("\nEscolha uma opcao:\n");
         printf("1 - Adicionar pessoa\n");
-        printf("2 - Remover pessoa\n");
-        printf("3 - Listar pessoas\n");
-        printf("4 - Pessoa mais velha\n");
-        printf("5 - Segunda pessoa mais nova\n");
-        printf("6 - Remover pessoas com ano de nascimento primo\n");
-        printf("0 - Sair\n");
+        printf("2 - Mostrar pessoas\n");
+        printf("3 - Excluir pessoa\n");
+        printf("4 - pessoa mais velha\n");
+        printf("5 - Sair\n");
+
         scanf("%d", &opcao);
-        
+
         switch (opcao) {
             case 1:
-                adicionar_pessoa();
+                
+                printf("Digite o ID da pessoa: ");
+                scanf("%d", &nova_pessoa.id);
+                printf("Digite o nome da pessoa: ");
+                scanf("%s", nova_pessoa.nome);
+                printf("Digite a data de nascimento da pessoa (no formato DD/MM/AAAA): ");
+                scanf("%s", nova_pessoa.data_nascimento);
+                // Adiciona a nova pessoa na lista
+                adicionar_pessoa(&cabeca, nova_pessoa);
                 break;
             case 2:
-                remover_pessoa();
+                mostrar_pessoas(cabeca);
                 break;
             case 3:
-                listar_pessoas();
+                
+                printf("Digite o ID da pessoa que deseja excluir: ");
+                scanf("%d", &id_para_excluir);
+                excluir_pessoa(&cabeca, id_para_excluir);
                 break;
             case 4:
-                printf("Pessoa mais velha:\n");
-                Pessoa mais_velha = pessoa_mais_velha();
-                printf("%d\t%s\t%s\t%s\n", mais_velha.id, mais_velha.nome, mais_velha.apelido, mais_velha.data_nascimento);
-                break;
-            case 5:
-                printf("Segunda pessoa mais nova:\n");
-                Pessoa segunda_mais_nova = segunda_pessoa_mais_nova();
-                printf("%d\t%s\t%s\t%s\n", segunda_mais_nova.id, segunda_mais_nova.nome, segunda_mais_nova.apelido, segunda_mais_nova.data_nascimento);
-                break;
-            case 6:
-                remover_primos();
-                break;
-            case 0:
-                printf("Saindo...\n");
-                break;
+				pessoa_mais_velha(cabeca);
+			case 5:
+                // Limpa a lista liberando a memÛria dos nÛs
+               
+                while (no_atual != NULL) {
+                    PessoaNode* proximo_no = no_atual->proximo;
+                    free(no_atual);
+                    no_atual = proximo_no;
+                }
+                return 0;
             default:
-                printf("Op√ß√£o inv√°lida.\n");
+                printf("Opcao invalida, tente novamente.\n");
         }
-    } while (opcao != 0);
-    
+    } while (opcao != 5);
+
     return 0;
 }
 
